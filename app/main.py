@@ -383,3 +383,5 @@ def ingest(p: IngestPayload, db: Client = Depends(get_db)):
 #   qualified BOOLEAN DEFAULT TRUE,
 #   created_at TIMESTAMPTZ DEFAULT NOW()
 # );
+
+# Docker CMD removed  put start command in Dockerfile or Render settings
