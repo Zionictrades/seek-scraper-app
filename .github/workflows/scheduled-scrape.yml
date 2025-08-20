@@ -12,22 +12,15 @@ jobs:
       - name: Call /scrape endpoint
         env:
           APP_URL: ${{ secrets.APP_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
           if [ -z "$APP_URL" ]; then
-            echo "APP_URL secret is not set"; exit 1
+            echo "APP_URL secret is not set" >&2
+            exit 1
           fi
-
-          echo "Calling $APP_URL/scrape"
-          resp=$(curl -sS -w "\n%{http_code}" -X POST "$APP_URL/scrape" \
+          echo "Posting scrape request to $APP_URL/scrape"
+          curl --fail -sS -X POST "$APP_URL/scrape" \
             -H "Content-Type: application/json" \
-            -d '{"role":"Electrician","location":"Adelaide","pages":1}')
-          body=$(echo "$resp" | sed '$d')
-          status=$(echo "$resp" | tail -n1)
-
-          echo "Status: $status"
-          echo "Body:"
-          echo "$body"
-
-          if [ "$status" -ge 400 ]; then
-            echo "Request failed"; exit 1
-          fi
+            -H "apikey: $SUPABASE_KEY" \
+            -d '{"role":"Electrician","location":"Adelaide","pages":1}'
+          echo "Scrape request
