@@ -11,7 +11,8 @@ import sys
 import asyncio
 import subprocess
 import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from playwright.async_api import async_playwright
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -41,13 +42,8 @@ logger = logging.getLogger("uvicorn.error")
 
 # Ensure Playwright browsers are installed at startup (registered on the final `app`)
 @app.on_event("startup")
-async def ensure_playwright_browsers():
-    try:
-        logger.info("Ensuring Playwright browsers are installed...")
-        subprocess.run(["python", "-m", "playwright", "install", "--with-deps"], check=True)
-        logger.info("Playwright browsers installed or already present.")
-    except Exception as e:
-        logger.exception("Playwright install at startup failed (continuing): %s", e)
+async def noop_startup():
+    logger.info("Startup: Playwright browsers are expected to be installed in the image at build time.")
 
 # -------------------- CORS --------------------
 # Open CORS by default; tighten if needed via env
@@ -116,6 +112,16 @@ class IngestPayload(BaseModel):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+@app.get("/playwright-health")
+async def playwright_health():
+    try:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch()
+            await browser.close()
+        return {"playwright": "ok"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # -------------------- Scrape → Process (OpenAI) → Store (Supabase) --------------------
 @app.post("/scrape", summary="Scrape new leads from Seek, process with AI, and save to DB")
