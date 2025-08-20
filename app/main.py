@@ -129,15 +129,6 @@ class IngestPayload(BaseModel):
 async def health():
     return {"status": "ok"}
 
-@app.on_event("startup")
-async def ensure_playwright_browsers():
-    try:
-        logger.info("Ensuring Playwright browsers are installed...")
-        subprocess.run(["python", "-m", "playwright", "install", "--with-deps"], check=True)
-        logger.info("Playwright browsers installed or already present.")
-    except Exception as e:
-        logger.exception("Playwright install at startup failed (continuing): %s", e)
-
 # -------------------- Scrape → Process (OpenAI) → Store (Supabase) --------------------
 @app.post("/scrape", summary="Scrape new leads from Seek, process with AI, and save to DB")
 async def scrape_and_process_leads(
