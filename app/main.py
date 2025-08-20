@@ -13,26 +13,6 @@ import subprocess
 import logging
 from fastapi import FastAPI
 
-app = FastAPI()
-logger = logging.getLogger("uvicorn.error")
-
-@app.on_event("startup")
-async def ensure_playwright_browsers():
-    try:
-        logger.info("Ensuring Playwright browsers are installed...")
-        subprocess.run(["python", "-m", "playwright", "install", "--with-deps"], check=True)
-        logger.info("Playwright browsers installed or already present.")
-    except Exception as e:
-        logger.exception("Playwright install at startup failed (continuing): %s", e)
-
-# Ensure subprocess support on Windows for Playwright (must run before any asyncio.create_subprocess_exec)
-if sys.platform == "win32":
-    try:
-        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-    except AttributeError:
-        # older Python where policy isn't available — ignore
-        pass
-
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -59,7 +39,15 @@ load_dotenv()
 app = FastAPI(title="Zionic Leads API")
 logger = logging.getLogger("uvicorn.error")
 
-SKIP_DB = os.getenv("SKIP_DB", "0").lower() in ("1", "true", "yes")
+# Ensure Playwright browsers are installed at startup (registered on the final `app`)
+@app.on_event("startup")
+async def ensure_playwright_browsers():
+    try:
+        logger.info("Ensuring Playwright browsers are installed...")
+        subprocess.run(["python", "-m", "playwright", "install", "--with-deps"], check=True)
+        logger.info("Playwright browsers installed or already present.")
+    except Exception as e:
+        logger.exception("Playwright install at startup failed (continuing): %s", e)
 
 # -------------------- CORS --------------------
 # Open CORS by default; tighten if needed via env
