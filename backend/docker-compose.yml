@@ -1,0 +1,25 @@
+version: "3.8"
+services:
+  app:
+    build: .
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env   # keep real secrets out of git; use .env locally only
+    restart: unless-stopped
+
+name: scheduled-scrape
+on:
+  schedule:
+    - cron: '0 */6 * * *'    # every 6 hours
+  workflow_dispatch:
+jobs:
+  call-scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call scrape
+        env:
+          BASE_URL: ${{ secrets.APP_URL }}   # e.g. https://your-host
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          curl -sS -X POST "$BASE_URL/scrape" -H "Content-Type: application/json" -d '{"role":"Electrician","location":"Adelaide","pages":1}'
