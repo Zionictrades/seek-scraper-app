@@ -19,7 +19,7 @@ RUN if [ -f /app/requirements.txt ]; then pip install -r /app/requirements.txt; 
 # Copy app source
 COPY . /app
 
-# Ensure Playwright browsers are installed AFTER playwright is installed
+# IMPORTANT: install Playwright browsers AFTER the playwright package is installed
 RUN python -m playwright install --with-deps
 
 ENV PYTHONUNBUFFERED=1
