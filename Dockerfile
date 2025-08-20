@@ -20,7 +20,11 @@ RUN if [ -f /app/requirements.txt ]; then pip install -r /app/requirements.txt; 
 COPY . /app
 
 # IMPORTANT: install Playwright browsers AFTER the playwright package is installed
-RUN python -m playwright install --with-deps
+# Make this step noisy so build logs show what's happening
+RUN echo "=== PLAYWRIGHT INSTALL START ===" && \
+    python -m playwright --version 2>/dev/null || echo "playwright module missing or --version failed" && \
+    python -m playwright install --with-deps || (echo "PLAYWRIGHT INSTALL FAILED (exit $?)" && false) && \
+    echo "=== PLAYWRIGHT INSTALL END ==="
 
 ENV PYTHONUNBUFFERED=1
 EXPOSE 10000
