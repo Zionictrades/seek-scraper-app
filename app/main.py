@@ -9,6 +9,7 @@ from typing import Optional, Any, Dict, List
 import urllib.parse
 import sys
 import asyncio
+import subprocess
 
 # Ensure subprocess support on Windows for Playwright (must run before any asyncio.create_subprocess_exec)
 if sys.platform == "win32":
@@ -43,6 +44,7 @@ logger = logging.getLogger("zionic-api")
 # -------------------- Env & App --------------------
 load_dotenv()
 app = FastAPI(title="Zionic Leads API")
+logger = logging.getLogger("uvicorn.error")
 
 SKIP_DB = os.getenv("SKIP_DB", "0").lower() in ("1", "true", "yes")
 
@@ -113,6 +115,15 @@ class IngestPayload(BaseModel):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+@app.on_event("startup")
+async def ensure_playwright_browsers():
+    try:
+        # Attempt to run playwright install if browser binaries missing
+        subprocess.run(["python", "-m", "playwright", "install", "--with-deps"], check=True)
+        logger.info("Playwright browsers ensured at startup.")
+    except Exception as e:
+        logger.exception("Playwright install at startup failed (continuing): %s", e)
 
 # -------------------- Scrape → Process (OpenAI) → Store (Supabase) --------------------
 @app.post("/scrape", summary="Scrape new leads from Seek, process with AI, and save to DB")
