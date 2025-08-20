@@ -7,6 +7,16 @@ import logging
 from datetime import datetime
 from typing import Optional, Any, Dict, List
 import urllib.parse
+import sys
+import asyncio
+
+# Ensure subprocess support on Windows for Playwright (must run before any asyncio.create_subprocess_exec)
+if sys.platform == "win32":
+    try:
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    except AttributeError:
+        # older Python where policy isn't available — ignore
+        pass
 
 from fastapi import FastAPI, Depends, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -101,7 +111,7 @@ class IngestPayload(BaseModel):
 
 # -------------------- Health --------------------
 @app.get("/health")
-def health():
+async def health():
     return {"status": "ok"}
 
 # -------------------- Scrape → Process (OpenAI) → Store (Supabase) --------------------
