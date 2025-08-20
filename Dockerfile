@@ -15,8 +15,6 @@ COPY . /app
 RUN python -m pip install --upgrade pip
 RUN if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-ENV PYTHONUNBUFFERED=1
-
 # install Playwright browsers (must be after pip install)
 RUN python -m playwright install --with-deps
 
