@@ -1,4 +1,5 @@
 name: scheduled-scrape
+
 on:
   schedule:
     - cron: '0 */6 * * *'    # every 6 hours
@@ -8,8 +9,25 @@ jobs:
   call-scrape:
     runs-on: ubuntu-latest
     steps:
-      - name: Call scrape endpoint
+      - name: Call /scrape endpoint
         env:
-          BASE_URL: ${{ secrets.APP_URL }}      # e.g. https://your-app.example
+          APP_URL: ${{ secrets.APP_URL }}
         run: |
-          curl -sS -X POST "$BASE_URL/scrape" -H "Content-Type: application/json" -d '{"role":"Electrician","location":"Adelaide","pages":1}'
+          if [ -z "$APP_URL" ]; then
+            echo "APP_URL secret is not set"; exit 1
+          fi
+
+          echo "Calling $APP_URL/scrape"
+          resp=$(curl -sS -w "\n%{http_code}" -X POST "$APP_URL/scrape" \
+            -H "Content-Type: application/json" \
+            -d '{"role":"Electrician","location":"Adelaide","pages":1}')
+          body=$(echo "$resp" | sed '$d')
+          status=$(echo "$resp" | tail -n1)
+
+          echo "Status: $status"
+          echo "Body:"
+          echo "$body"
+
+          if [ "$status" -ge 400 ]; then
+            echo "Request failed"; exit 1
+          fi
